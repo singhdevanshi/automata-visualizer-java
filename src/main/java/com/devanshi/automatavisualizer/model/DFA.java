@@ -30,19 +30,21 @@ public class DFA {
         }
 
         State currentState = initialState;
-        for (char c : input.toCharArray()) {
-            if (!alphabet.contains(c)) {
-                return false; // Reject if the input contains an invalid symbol
-            }
 
-            State nextState = currentState.getTransition(c);
-            if (nextState == null) {
-                return false; // Reject if there is no valid transition
-            }
+        for (char symbol : input.toCharArray()) {
+            // System.out.println("Current State: " + currentState.getName());
+            // System.out.println("Transition on symbol '" + symbol + "': " +
+            // currentState.getTransition(symbol));
 
-            currentState = nextState;
+            currentState = currentState.getTransition(symbol);
+            if (currentState == null) {
+                System.out.println("No valid transition found for symbol '" + symbol + "'. Input rejected.");
+                return false; // No valid transition, reject the input
+            }
         }
 
+        System.out.println("Final State: " + currentState.getName());
+        System.out.println("Is Final State Accepting: " + currentState.isAccepting());
         return currentState.isAccepting(); // Accept if end state is a final state
     }
 

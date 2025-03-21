@@ -1,5 +1,7 @@
 package com.devanshi.automatavisualizer.util;
 
+import java.util.Set;
+
 import com.devanshi.automatavisualizer.model.DFA;
 import com.devanshi.automatavisualizer.model.State;
 
@@ -25,23 +27,27 @@ public class LanguageParser {
             dfa.addState(states[i]);
         }
 
-        // Add transitions
+        // Add transitions for the best case
         for (int i = 0; i < suffix.length(); i++) {
             char symbol = suffix.charAt(i);
+            states[i].addTransition(symbol, states[i + 1]);
+        }
 
-            for (int j = 0; j < suffix.length(); j++) { // Ensuring j doesn't go beyond valid range
-                if (suffix.charAt(j) == symbol && j + 1 <= suffix.length()) {
-                    states[j].addTransition(symbol, states[j + 1]); // Avoid out-of-bounds access
-                } else {
-                    // Compute longest suffix-prefix fallback
-                    int backTo = 0;
-                    for (int k = j; k > 0; k--) {
-                        if (suffix.substring(0, k).equals(suffix.substring(j - k + 1, j + 1))) {
-                            backTo = k;
-                            break;
-                        }
+        // Print missing transitions for each state and create transitions based on
+        // conditions
+        for (int i = 0; i <= suffix.length(); i++) {
+            Set<Character> transitions = states[i].getTransitions().keySet();
+            for (char symbol : dfa.getAlphabet()) {
+                if (!transitions.contains(symbol)) {
+                    // System.out.println(
+                    // "State " + states[i].getName() + " is missing transition on symbol '" +
+                    // symbol + "'");
+                    if (symbol == suffix.charAt(0)) {
+                        states[i].addTransition(symbol, states[1]); // Transition to q1 if missing symbol is the first
+                                                                    // character of the pattern
+                    } else {
+                        states[i].addTransition(symbol, states[0]); // Transition to q0 otherwise
                     }
-                    states[j].addTransition(symbol, states[backTo]);
                 }
             }
         }
