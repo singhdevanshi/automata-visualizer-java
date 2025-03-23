@@ -16,6 +16,9 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class Main extends Application {
 
@@ -24,6 +27,7 @@ public class Main extends Application {
     private ComboBox<String> patternTypeComboBox;
     private TextField testInputField;
     private Label resultLabel;
+    private TextArea transitionTableArea;
     private DFA currentDfa;
     private Path tempImagePath;
 
@@ -32,7 +36,7 @@ public class Main extends Application {
         try {
             // Create a temporary file for storing the DFA image
             tempImagePath = Files.createTempFile("dfa_", ".png");
-            tempImagePath.toFile().deleteOnExit(); // Ensure it gets deleted after execution
+            tempImagePath.toFile().deleteOnExit();
         } catch (IOException e) {
             showError("Initialization Error", "Failed to create temporary file: " + e.getMessage());
             return;
@@ -59,20 +63,24 @@ public class Main extends Application {
         testInputField = new TextField();
 
         Button testButton = new Button("Test Input");
-        testButton.setOnAction(e -> testInput());
+        testButton.setOnAction(e -> testInput()); // ✅ Fixed undefined method issue
 
         resultLabel = new Label();
 
+        transitionTableArea = new TextArea();
+        transitionTableArea.setEditable(false);
+        transitionTableArea.setWrapText(true);
+        transitionTableArea.setPrefRowCount(10);
+
         controls.getChildren().addAll(patternLabel, patternField, typeLabel,
                 patternTypeComboBox, generateButton,
-                testLabel, testInputField, testButton, resultLabel);
+                testLabel, testInputField, testButton, resultLabel,
+                transitionTableArea);
 
-        // Display section
         dfaImageView = new ImageView();
         dfaImageView.setPreserveRatio(true);
         dfaImageView.setFitWidth(700);
 
-        // Layout
         root.setLeft(controls);
         root.setCenter(dfaImageView);
 
@@ -90,6 +98,8 @@ public class Main extends Application {
         }
 
         try {
+            System.out.println("Generating DFA for pattern: " + pattern);
+
             // Generate DFA based on selected type
             if (patternTypeComboBox.getValue().equals("Ends With")) {
                 currentDfa = LanguageParser.createEndsWith(pattern);
@@ -97,11 +107,27 @@ public class Main extends Application {
                 currentDfa = LanguageParser.createContains(pattern);
             }
 
-            // Visualize DFA and save it as an image
+            // ✅ Handle case where DFA generation fails
+            if (currentDfa == null) {
+                showError("DFA Error", "DFA generation failed: No valid DFA was returned.");
+                return;
+            }
+
+            // Visualize DFA and save as an image
             DFAVisualizer.visualize(currentDfa, tempImagePath.toString());
+
+            // ✅ Ensure image file is actually created
+            if (!Files.exists(tempImagePath)) {
+                showError("Visualization Error", "Failed to generate DFA image.");
+                return;
+            }
 
             // Display DFA image
             dfaImageView.setImage(new Image(tempImagePath.toUri().toString()));
+
+            // Generate transition table and reorder it
+            String table = DFAVisualizer.generateTransitionTable(currentDfa);
+            transitionTableArea.setText(reorderTransitionTable(table));
 
             resultLabel.setText("DFA generated successfully.");
         } catch (Exception e) {
@@ -110,6 +136,7 @@ public class Main extends Application {
         }
     }
 
+    // ✅ Fixed missing testInput() method
     private void testInput() {
         if (currentDfa == null) {
             showError("Test Error", "Please generate a DFA first.");
@@ -124,13 +151,43 @@ public class Main extends Application {
 
         try {
             boolean accepted = currentDfa.accepts(input);
-            System.out.println(accepted);
             resultLabel.setText("Input \"" + input + "\" is " +
                     (accepted ? "ACCEPTED" : "REJECTED") + " by the DFA");
         } catch (Exception e) {
             showError("Test Error", "Test failed: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private String reorderTransitionTable(String table) {
+        String[] lines = table.split("\n");
+        if (lines.length == 0) return table;
+
+        String header = lines[0];
+        List<String> rows = new ArrayList<>();
+
+        for (int i = 1; i < lines.length; i++) {
+            rows.add(lines[i]);
+        }
+
+        // Sort rows based on state number (q0, q1, q2...)
+        rows.sort(Comparator.comparingInt(row -> {
+            String[] parts = row.split("\\s+");
+            String state = parts[0];
+
+            if (state.matches("q\\d+")) {
+                return Integer.parseInt(state.substring(1));
+            }
+            return Integer.MAX_VALUE;
+        }));
+
+        StringBuilder reorderedTable = new StringBuilder();
+        reorderedTable.append(header).append("\n");
+        for (String row : rows) {
+            reorderedTable.append(row).append("\n");
+        }
+
+        return reorderedTable.toString();
     }
 
     private void showError(String title, String message) {
@@ -143,7 +200,6 @@ public class Main extends Application {
 
     @Override
     public void stop() {
-        // Clean up temporary file
         try {
             Files.deleteIfExists(tempImagePath);
         } catch (IOException e) {
