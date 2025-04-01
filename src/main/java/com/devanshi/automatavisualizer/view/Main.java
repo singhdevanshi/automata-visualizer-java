@@ -19,6 +19,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import com.brunomnsilva.smartgraph.graph.Graph;
+import com.brunomnsilva.smartgraph.graph.GraphEdgeList;
+//firebase imports
+// import com.google.auth.oauth2.GoogleCredentials;
+// import com.google.cloud.firestore.Firestore;
+// import com.google.firebase.cloud.FirestoreClient;
+// import com.google.firebase.FirebaseApp;
+// import com.google.firebase.FirebaseOptions;
 
 public class Main extends Application {
 
@@ -83,6 +91,40 @@ public class Main extends Application {
 
         root.setLeft(controls);
         root.setCenter(dfaImageView);
+
+        Graph<String, String> g = new GraphEdgeList<>();
+
+        g.insertVertex("A");
+        g.insertVertex("B");
+        g.insertVertex("C");
+        g.insertVertex("D");
+        g.insertVertex("E");
+        g.insertVertex("F");
+        g.insertVertex("G");
+
+        g.insertEdge("A", "B", "1");
+        g.insertEdge("A", "C", "2");
+        g.insertEdge("A", "D", "3");
+        g.insertEdge("A", "E", "4");
+        g.insertEdge("A", "F", "5");
+        g.insertEdge("A", "G", "6");
+
+        g.insertVertex("H");
+        g.insertVertex("I");
+        g.insertVertex("J");
+        g.insertVertex("K");
+        g.insertVertex("L");
+        g.insertVertex("M");
+        g.insertVertex("N");
+
+        g.insertEdge("H", "I", "7");
+        g.insertEdge("H", "J", "8");
+        g.insertEdge("H", "K", "9");
+        g.insertEdge("H", "L", "10");
+        g.insertEdge("H", "M", "11");
+        g.insertEdge("H", "N", "12");
+
+        g.insertEdge("A", "H", "0");
 
         Scene scene = new Scene(root, 1000, 600);
         primaryStage.setTitle("Automata Visualizer");
@@ -161,7 +203,8 @@ public class Main extends Application {
 
     private String reorderTransitionTable(String table) {
         String[] lines = table.split("\n");
-        if (lines.length == 0) return table;
+        if (lines.length == 0)
+            return table;
 
         String header = lines[0];
         List<String> rows = new ArrayList<>();
